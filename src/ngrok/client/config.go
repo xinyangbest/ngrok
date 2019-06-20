@@ -35,11 +35,7 @@ type TunnelConfiguration struct {
 }
 
 func LoadConfiguration(opts *Options) (config *Configuration, err error) {
-	configPath := opts.config
-	if configPath == "" {
-		configPath = defaultPath()
-	}
-
+        configPath := opts.config
 	log.Info("Reading configuration file %s", configPath)
 	configBuf, err := ioutil.ReadFile(configPath)
 	if err != nil {
@@ -201,6 +197,17 @@ func LoadConfiguration(opts *Options) (config *Configuration, err error) {
 	return
 }
 
+func isExist(path string) bool {
+	_, err := os.Stat(path)    
+	if err != nil {
+		if os.IsExist(err) {
+			return true
+		}
+		return false
+	}
+	return true
+}
+
 func defaultPath() string {
 	user, err := user.Current()
 
@@ -212,8 +219,22 @@ func defaultPath() string {
 	} else {
 		homeDir = user.HomeDir
 	}
-
-	return path.Join(homeDir, ".sltin" ,"sltin.yml")
+	dirPath:= path.Join(homeDir, ".sltin")
+	filePath:= path.Join(dirPath,"sltin.yml")
+	if !isExist(dirPath) {
+		err := os.MkdirAll(dirPath,os.ModePerm)
+		if err != nil {
+                	fmt.Errorf("Failed to create directory: %s ,path %s ", err.Error(),dirPath)
+			os.Exit(0)
+        	}
+		file,err:=os.Create(filePath)
+		if err!=nil{
+			fmt.Errorf("Failed to create file: %s ,path %s ", err.Error(),filePath)
+                        os.Exit(0)
+    		}
+    		file.Close()
+	}	
+	return filePath
 }
 
 func normalizeAddress(addr string, propName string) (string, error) {
@@ -256,7 +277,6 @@ func SaveAuthToken(configPath, authtoken string) (err error) {
 			return
 		}
 	}
-
 	// no need to save, the authtoken is already the correct value
 	if c.AuthToken == authtoken {
 		return
@@ -270,7 +290,9 @@ func SaveAuthToken(configPath, authtoken string) (err error) {
 	if err != nil {
 		return
 	}
-
 	err = ioutil.WriteFile(configPath, newConfigBytes, 0600)
+	if err !=nil {
+		fmt.Errorf("Token %s writes to a file %s abnormal ", c.AuthToken, configPath)
+	}
 	return
 }

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	"fmt"
 	metrics "github.com/rcrowley/go-metrics"
 )
 
@@ -78,7 +78,6 @@ func (h *Http) readRequests(tee *conn.Tee, lastTxn chan *HttpTxn, connCtx interf
 			// no more requests to be read, we're done
 			break
 		}
-
 		// make sure we read the body of the request so that
 		// we don't block the writer
 		_, err = httputil.DumpRequest(req, true)
@@ -89,11 +88,12 @@ func (h *Http) readRequests(tee *conn.Tee, lastTxn chan *HttpTxn, connCtx interf
 		}
 
 		// golang's ReadRequest/DumpRequestOut is broken. Fix up the request so it works later
-		req.URL.Scheme = "http"
+		req.URL.Scheme = "https"
 		req.URL.Host = req.Host
 
 		txn := &HttpTxn{Start: time.Now(), ConnUserCtx: connCtx}
 		txn.Req = &HttpRequest{Request: req}
+		fmt.Printf("%+v\n", txn.ConnUserCtx)
 		if req.Body != nil {
 			txn.Req.BodyBytes, txn.Req.Body, err = extractBody(req.Body)
 			if err != nil {

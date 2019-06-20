@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"ngrok/version"
+        "ngrok/log"
 	"os"
 )
 
@@ -21,6 +22,7 @@ Examples:
 
 Advanced usage: ngrok [OPTIONS] <command> [command args] [...]
 Commands:
+	ngrok authtoken <TOKEN>       Set you authtoken
 	ngrok start [tunnel] [...]    Start tunnels by name from config file
 	ngork start-all               Start all tunnels defined in config file
 	ngrok list                    List tunnel names from config file
@@ -109,7 +111,25 @@ func ParseArgs() (opts *Options, err error) {
 		command:   flag.Arg(0),
 	}
 
+        if opts.config == "" {
+                opts.config = defaultPath()
+        }
+
 	switch opts.command {
+	case "authtoken":
+                if len(flag.Args()) <2 {
+                        err = fmt.Errorf("Please enter the authtoken parameter, got %d: %v",
+                                len(flag.Args()), 
+                                flag.Args())
+                        return  
+                }
+		if err = SaveAuthToken(opts.config, flag.Arg(1)); err != nil {
+                        fmt.Errorf("Failed to save auth token: %v", err)
+                }
+                log.Info("save authtoken to configuration file %s", opts.config)
+                fmt.Println("save authtoken to configuration file ", opts.config)
+                os.Exit(0)
+
 	case "list":
 		opts.args = flag.Args()[1:]
 	case "start":
